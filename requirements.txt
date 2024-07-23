@@ -2,3 +2,4 @@ curl_cffi==0.7.1
 playwright==1.45.0
 playwright_stealth==1.0.6
 selectolax==0.3.21
+setuptools==71.1.0
