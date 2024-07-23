@@ -111,6 +111,14 @@ def main():
     script_dict = json.loads(script.text())
     real_properties = script_dict["props"]["pageProps"]["searchPageState"]["cat1"]["searchResults"]["listResults"]
     for property in real_properties:
+        address = property["address"]
+        street = property["addressStreet"]
+        city = property["addressCity"]
+        state = property["addressState"]
+        zip_code = property["addressZipcode"]
+        price = property["unformattedPrice"] if "unformattedPrice" in property else None
+        phone_number = None
+
         url = (
             property["detailUrl"]
             if property["detailUrl"].startswith("http")
@@ -118,32 +126,24 @@ def main():
         )
         print(f"Processing: {url}")
         response = try_requests(url)
-        if response is None:
-            print(f"Cannot get phone number for: {url}")
-            continue
-        tree = HTMLParser(response.text)
-        address = property["address"]
-        street = property["addressStreet"]
-        city = property["addressCity"]
-        state = property["addressState"]
-        zip_code = property["addressZipcode"]
-        price = property["unformattedPrice"] if "unformattedPrice" in property else None
-        script = tree.css_first("script#__NEXT_DATA__")
-        script_dict = json.loads(script.text())
-        try:
-            phone_number = script_dict["props"]["pageProps"]["componentProps"]["initialReduxState"]["gdp"]["building"][
-                "buildingPhoneNumber"
-            ]
-        except KeyError as e:
-            # print(f"ERROR: {e}")
-            phone_selector = "li.ds-listing-agent-info-text"
-            scrollable_selectors = ["div.data-view-container", "div.layout-container-desktop"]
-            num_tries = 5
-            for _ in range(num_tries):
-                phone_number = load_page_and_scroll(url, phone_selector, scrollable_selectors)
-                if phone_number is not None:
-                    break
-                print(f"Cannot get phone number for: {url}. Retrying...")
+        if response is not None:
+            tree = HTMLParser(response.text)
+            script = tree.css_first("script#__NEXT_DATA__")
+            script_dict = json.loads(script.text())
+            try:
+                phone_number = script_dict["props"]["pageProps"]["componentProps"]["initialReduxState"]["gdp"][
+                    "building"
+                ]["buildingPhoneNumber"]
+            except KeyError as e:
+                # print(f"ERROR: {e}")
+                phone_selector = "li.ds-listing-agent-info-text"
+                scrollable_selectors = ["div.data-view-container", "div.layout-container-desktop"]
+                num_tries = 5
+                for _ in range(num_tries):
+                    phone_number = load_page_and_scroll(url, phone_selector, scrollable_selectors)
+                    if phone_number is not None:
+                        break
+                    print(f"Cannot get phone number for: {url}. Retrying...")
 
         data = {
             "address": address,
